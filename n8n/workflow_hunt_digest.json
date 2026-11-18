@@ -1,0 +1,80 @@
+{
+  "name": "NilePay - Threat Hunt Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "np-sched-0101",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8080/api/hunts/run-all",
+        "options": {}
+      },
+      "id": "np-http-0102",
+      "name": "Run all hunts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node - \"Hunt digest\"  (mode: Run Once for All Items)\n// Input : response of GET /api/hunts/run-all  { hunts:[{id,name,hits}], total_hits }\nconst res = $input.first().json;\nconst hunts = Array.isArray(res.hunts) ? res.hunts : [];\nconst withHits = hunts.filter(h => h.hits > 0);\nconst lines = withHits.map(h => `- ${h.id} ${h.name}: ${h.hits} lead(s)`);\nreturn [{\n  json: {\n    subject: `NilePay SOC hunt digest: ${withHits.length}/${hunts.length} hunts have leads`,\n    total_hits: res.total_hits ?? 0,\n    body: lines.length ? lines.join('\\n') : 'No hunt leads in this run.',\n    generated_at: new Date().toISOString(),\n  },\n}];\n"
+      },
+      "id": "np-code-0103",
+      "name": "Hunt digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        520,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Run all hunts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run all hunts": {
+      "main": [
+        [
+          {
+            "node": "Hunt digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "pinData": {},
+  "tags": []
+}

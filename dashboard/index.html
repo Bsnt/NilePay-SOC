@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NilePay SOC Console</title>
+<style>
+:root{--bg:#0e1116;--panel:#141a21;--panel2:#19212a;--line:#232d38;--line2:#2e3a47;--txt:#cfd8e0;--mut:#8593a1;--dim:#5b6977;
+--accent:#3aa6b9;--gold:#c8a24d;--crit:#d4505f;--high:#d98a3d;--med:#c9a64f;--low:#4e9c8b;--ok:#4e9c8b;
+--mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.45 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;display:grid;grid-template-columns:212px 1fr}
+a{color:var(--accent)}small,.dim{color:var(--mut)}.mono{font-family:var(--mono);font-size:12px}.sp{flex:1}
+aside{background:#0b0e13;border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.brand{padding:16px 16px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.brand b{display:block;font-size:14px;letter-spacing:.02em;color:#e6edf3}.brand small{font-size:11px}
+nav{padding:8px 0;overflow:auto;flex:1}nav h6{margin:14px 16px 4px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
+nav a{display:flex;align-items:center;padding:7px 16px;color:var(--mut);text-decoration:none;border-left:2px solid transparent;cursor:pointer}
+nav a:hover{color:var(--txt);background:#10151c}nav a.on{color:#e6edf3;border-left-color:var(--gold);background:#121820}
+nav .bd{margin-left:auto;font-size:11px;padding:0 6px;border:1px solid var(--line2);border-radius:9px;color:var(--mut)}nav .bd.hot{color:#f0c36a;border-color:#6b5524}
+.me{padding:12px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--mut)}
+.me input{width:100%;margin-top:4px}
+.main{min-width:0;display:flex;flex-direction:column;min-height:100vh}
+.top{display:flex;align-items:center;gap:12px;padding:10px 22px;border-bottom:1px solid var(--line);background:#0e1116;position:sticky;top:0;z-index:5}
+.top h1{margin:0;font-size:15px;font-weight:600;color:#e6edf3}.top .clk{font-family:var(--mono);font-size:12px;color:var(--mut)}
+.pill{font-size:11px;padding:2px 8px;border:1px solid var(--line2);border-radius:3px;color:var(--mut)}
+#view{padding:18px 22px 40px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:3px;min-width:0}
+.ph{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.pb{padding:12px}.pb.np{padding:0;overflow-x:auto}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:2fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}.col{display:grid;gap:14px}
+@media(max-width:1100px){body{grid-template-columns:64px 1fr}.brand div,nav h6,nav a span.t,.me{display:none}.g2,.g3,.two{grid-template-columns:1fr}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.kpi{background:var(--panel);padding:11px 14px}.kpi small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.kpi b{font-size:22px;font-weight:600;color:#e6edf3;font-variant-numeric:tabular-nums}.kpi em{font-style:normal;font-size:11.5px;color:var(--mut);margin-left:6px}
+table.tbl{width:100%;border-collapse:collapse}.tbl th{padding:7px 10px;text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap;background:#121820}
+.tbl td{padding:7px 10px;border-bottom:1px solid #1a222b;vertical-align:top;font-variant-numeric:tabular-nums}.tbl tr:last-child td{border-bottom:0}
+.tbl tr.row{cursor:pointer}.tbl tr.row:hover td{background:#16202a}.tbl td.nw{white-space:nowrap}.tbl .empty{padding:18px;text-align:center;color:var(--dim)}
+.sv{white-space:nowrap}.sv i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--dim)}
+.s-Critical i{background:var(--crit)}.s-High i{background:var(--high)}.s-Medium i{background:var(--med)}.s-Low i{background:var(--low)}
+.pr{font-family:var(--mono);font-size:11px;padding:1px 5px;border-radius:2px;border:1px solid var(--line2);color:var(--mut)}.pr-P1{color:#ff8a96;border-color:#6d2a33}.pr-P2{color:#f0b46a;border-color:#6b4a24}
+.st{font-size:11.5px;padding:1px 7px;border-radius:2px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap}
+.st-PendingApproval{color:#f0c36a;border-color:#6b5524}.st-Escalated{color:#ff8a96;border-color:#6d2a33}.st-Investigating{color:#8fd0de;border-color:#25606c}
+.st-Contained,.st-Resolved{color:#7fc7b6;border-color:#2c5b50}.st-Closed{color:var(--dim)}
+.ai{font-family:var(--mono);font-size:11px;padding:1px 5px;border-radius:2px;border:1px solid var(--line2)}.ai-tp{color:#ff8a96}.ai-fp{color:#7fc7b6}.ai-ni{color:#f0c36a}
+.btn,button{font:inherit;color:var(--txt);background:transparent;border:1px solid var(--line2);border-radius:3px;padding:5px 11px;cursor:pointer}
+.btn:hover{background:var(--panel2)}.btn.pri{color:#8fd0de;border-color:#2c6b78}.btn.ok{color:#7fc7b6;border-color:#2c5b50}.btn.bad{color:#ff8a96;border-color:#6d2a33}.btn.sm{padding:2px 8px;font-size:12px}.btn[disabled]{opacity:.4;cursor:default}
+input,select,textarea{font:inherit;color:var(--txt);background:#0b0e13;border:1px solid var(--line2);border-radius:3px;padding:5px 8px;max-width:100%}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--accent);border-color:var(--accent)}textarea{width:100%;resize:vertical}textarea.code{font-family:var(--mono);font-size:12px;line-height:1.5}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:12.5px}.kv dt{color:var(--mut)}.kv dd{margin:0;word-break:break-word}
+.hb{height:6px;background:#0b0e13;border-radius:2px;overflow:hidden}.hb i{display:block;height:100%;background:var(--accent)}
+.drawer{position:fixed;top:0;right:0;width:640px;max-width:100%;height:100vh;background:var(--panel);border-left:1px solid var(--line2);transform:translateX(105%);transition:transform .15s;z-index:20;display:flex;flex-direction:column}
+.drawer.open{transform:none}.dh{padding:14px 18px 0;border-bottom:1px solid var(--line)}.dh h2{margin:0 0 4px;font-size:15px;color:#e6edf3}
+.tabs{display:flex;gap:2px;margin-top:10px}.tabs a{padding:7px 12px;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent}.tabs a.on{color:#e6edf3;border-bottom-color:var(--gold)}
+.db{padding:16px 18px;overflow:auto;flex:1}.df{padding:10px 18px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;background:#121820}
+.box{border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin:10px 0;background:#10161d}.box h5{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut)}.box ul{margin:0;padding-left:18px}.box li{margin:2px 0}
+.rec{border-left:3px solid var(--gold)}.rec.approve{border-left-color:var(--crit)}.rec.reject{border-left-color:var(--low)}
+.ov{position:fixed;inset:0;background:rgba(5,8,12,.66);z-index:40;display:flex;align-items:center;justify-content:center}
+.md{background:var(--panel);border:1px solid var(--line2);border-radius:3px;padding:18px;width:460px;max-width:94vw}.md h3{margin:0 0 8px;font-size:14px;color:#e6edf3}.md p{color:var(--mut);margin:0 0 8px}
+.fl{display:block;margin:10px 0}.fl span{display:block;font-size:11.5px;color:var(--mut);margin-bottom:3px}.fl select,.fl input{width:100%}.fl small{display:block;margin-top:2px}.mb{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}.err{margin-top:8px;color:#ff8a96;font-size:12px}
+#toasts{position:fixed;left:226px;bottom:16px;z-index:60;display:grid;gap:6px}.toast{background:#1a232d;border:1px solid var(--line2);border-left:3px solid var(--ok);padding:8px 12px;border-radius:3px;max-width:420px}.toast.bad{border-left-color:var(--crit)}
+.cov{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;padding:12px}.cov div{border:1px solid var(--line2);border-radius:3px;padding:7px 9px;font-size:12px}.cov .y{border-color:#25606c;background:#10202a}.cov .n{border-style:dashed;color:var(--dim)}
+.res{margin-top:10px;overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:3px}.msg{padding:8px 10px;border:1px solid var(--line2);border-radius:3px;margin-top:8px;font-size:12.5px}.msg.bad{border-color:#6d2a33;color:#ff8a96}.msg.good{border-color:#2c5b50;color:#7fc7b6}
+.meter{height:6px;background:#0b0e13;border-radius:2px;margin:4px 0 8px}.meter i{display:block;height:100%;background:var(--gold);border-radius:2px}
+</style></head><body>
+<aside>
+<div class="brand"><svg width="30" height="30" viewBox="0 0 30 30"><circle cx="21" cy="9" r="3.2" fill="#c8a24d"/><path d="M2 19c4-5 7 5 11 0s7 5 11 0M2 25c4-5 7 5 11 0s7 5 11 0" fill="none" stroke="#3aa6b9" stroke-width="1.8" stroke-linecap="round"/></svg><div><b>NilePay</b><small>Security Operations</small></div></div>
+<nav id="nav"></nav>
+<div class="me">Signed in as<input id="me" maxlength="30" spellcheck="false"><div style="margin-top:6px">Shift: Cairo (UTC+2)</div></div>
+</aside>
+<div class="main">
+<div class="top"><h1 id="ptitle"></h1><span class="sp"></span><span class="pill" id="mode"></span><span class="clk" id="clk"></span>
+<button class="btn sm" id="rSoc">SOC report PDF</button><button class="btn sm" id="rGrc">GRC report PDF</button></div>
+<div id="view"></div></div>
+<div class="drawer" id="drawer"></div><div id="toasts"></div>
+<script>
+'use strict';
+const S={alerts:[],now:0,mode:'local',pending:0,pbs:[],ai:{},f:{status:'open',sev:'all',ai:'all',q:''}};
+const OPEN=['New','Triaged','Pending Approval','Investigating','Escalated'];
+const SEV=['Critical','High','Medium','Low'];
+const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const aid=id=>'NP-'+String(id).padStart(5,'0');
+const cairo=(t,full)=>{const s=new Date(t+7200000).toISOString();return full?s.slice(0,10)+' '+s.slice(11,16):s.slice(11,16)};
+const ago=m=>m<60?Math.round(m)+'m':m<1440?(m/60).toFixed(1)+'h':(m/1440).toFixed(1)+'d';
+const who=()=>{try{return localStorage.getItem('np_analyst')||'analyst1'}catch(e){return 'analyst1'}};
+const q=o=>encodeURIComponent(o);
+async function api(path,body){
+  const o=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({actor:who()},body))};
+  const r=await fetch(path,o);let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error((j&&j.error)||('HTTP '+r.status));return j}
+function toast(m,bad){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.textContent=m;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),bad?6500:3200)}
+const sev=s=>'<span class="sv s-'+esc(s)+'"><i></i>'+esc(s)+'</span>';
+const stc=s=>'<span class="st st-'+esc(s).replace(/ /g,'')+'">'+esc(s)+'</span>';
+const pri=p=>p?'<span class="pr pr-'+esc(p)+'">'+esc(p)+'</span>':'';
+const aiTag=(v,c)=>v?'<span class="ai ai-'+(v==='True Positive'?'tp':v==='Likely false positive'?'fp':'ni')+'">'+(v==='True Positive'?'TP':v==='Likely false positive'?'FP':'NI')+' '+c+'%</span>':'<span class="dim">-</span>';
+const th=h=>'<thead><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead>';
+const emptyRow=(n,t)=>'<tr><td colspan="'+n+'" class="empty">'+t+'</td></tr>';
+
+function modal(o){return new Promise(res=>{
+  const ov=document.createElement('div');ov.className='ov';
+  const f=(o.fields||[]).map(x=>'<label class="fl"><span>'+esc(x.label)+(x.required?' *':'')+'</span>'+
+    (x.type==='select'?'<select name="'+x.k+'">'+x.options.map(op=>'<option'+(op===x.value?' selected':'')+'>'+esc(op)+'</option>').join('')+'</select>':
+     x.type==='textarea'?'<textarea name="'+x.k+'" rows="3">'+esc(x.value||'')+'</textarea>':'<input name="'+x.k+'" value="'+esc(x.value||'')+'">')+
+    (x.hint?'<small>'+esc(x.hint)+'</small>':'')+'</label>').join('');
+  ov.innerHTML='<div class="md"><h3>'+esc(o.title)+'</h3>'+(o.body?'<p>'+o.body+'</p>':'')+f+'<div class="err" hidden></div><div class="mb"><button class="btn" data-x>Cancel</button><button class="btn '+(o.cls||'pri')+'" data-ok>'+esc(o.ok||'Confirm')+'</button></div></div>';
+  document.body.appendChild(ov);
+  $('[data-x]',ov).onclick=()=>{ov.remove();res(false)};
+  $('[data-ok]',ov).onclick=async()=>{const v={};let bad=null;
+    $$('[name]',ov).forEach(el=>{v[el.name]=el.value.trim();const fd=(o.fields||[]).find(z=>z.k===el.name);if(fd&&fd.required&&!v[el.name])bad=fd.label});
+    const er=$('.err',ov);if(bad){er.hidden=false;er.textContent=bad+' is required';return}
+    try{await o.onSubmit(v);ov.remove();res(true)}catch(e){er.hidden=false;er.textContent=e.message}};
+  const first=$('[name]',ov);if(first)first.focus();})}
+
+async function loadState(){
+  const s=await api('/api/state');S.alerts=s.alerts;S.now=s.now;S.mode=s.mode;S.pending=s.pending_approvals;S.pbs=s.playbooks;S.ai=s.ai;
+  $('#mode').textContent=s.mode==='n8n'?'SOAR: n8n':'SOAR: local playbooks';
+  const open=S.alerts.filter(a=>OPEN.includes(a.status)).length;
+  $('#bd-queue').textContent=open;const b=$('#bd-approvals');b.textContent=S.pending;b.classList.toggle('hot',S.pending>0)}
+const isOpen=a=>OPEN.includes(a.status);
+
+/* ---------------- Overview ---------------- */
+const Overview={live:true,init(el){el.innerHTML='<div class="kpis" id="kp"></div><div class="grid g2"><div class="panel"><div class="ph">Alert volume, last 24 hours (Cairo time)</div><div class="pb" id="vol"></div></div>'+
+  '<div class="panel"><div class="ph">Pending decisions</div><div class="pb np"><table class="tbl" id="pend"></table></div></div></div>'+
+  '<div class="grid g3" style="margin-top:14px"><div class="panel"><div class="ph">Status</div><div class="pb" id="stat"></div></div><div class="panel"><div class="ph">ATT&amp;CK tactics seen</div><div class="pb" id="tacs"></div></div><div class="panel"><div class="ph">Needs attention</div><div class="pb np"><table class="tbl" id="attn"></table></div></div></div>'},
+ async update(){
+  const [M,A]=await Promise.all([api('/api/metrics'),api('/api/ai/stats')]);
+  const open=S.alerts.filter(isOpen);
+  const k=[['Open alerts',open.length,open.filter(a=>a.priority==='P1').length+' P1'],['Awaiting approval',S.pending,M.approvals.oldest_pending_min?'oldest '+ago(M.approvals.oldest_pending_min):''],
+   ['SLA compliance',M.sla_pct+'%',M.backlog+' open'],['MTTD',M.mttd_min+' min',''],['MTTA',M.mtta_min?M.mtta_min+' min':'-',''],['MTTR',M.mttr_min?M.mttr_min+' min':'-',''],
+   ['False-positive rate',M.dispositioned?M.fp_rate+'%':'-','of '+M.dispositioned+' closed'],['AI agreement',A.agreement_pct==null?'-':A.agreement_pct+'%',A.feedback_count+' reviews']];
+  $('#kp').innerHTML=k.map(x=>'<div class="kpi"><small>'+x[0]+'</small><b>'+x[1]+'</b><em>'+esc(x[2])+'</em></div>').join('');
+  const now=S.now*1000,H=24,bk=Array.from({length:H},()=>({Critical:0,High:0,Medium:0,Low:0}));
+  S.alerts.forEach(a=>{const h=Math.floor((now-a.t)/3.6e6);if(h>=0&&h<H)bk[H-1-h][a.sev]++});
+  const mx=Math.max(4,...bk.map(b=>SEV.reduce((s,v)=>s+b[v],0))),W=640,Ht=170,bw=W/H;
+  const colr={Critical:'#d4505f',High:'#d98a3d',Medium:'#c9a64f',Low:'#4e9c8b'};
+  let s='<svg viewBox="0 0 '+W+' '+(Ht+22)+'" width="100%" role="img">';
+  for(let i=0;i<=4;i++){const y=Ht-Ht*i/4;s+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#232d38"/><text x="0" y="'+(y-2)+'" font-size="9" fill="#5b6977">'+Math.round(mx*i/4)+'</text>'}
+  bk.forEach((b,i)=>{let y=Ht;SEV.slice().reverse().forEach(v=>{const h=Ht*b[v]/mx;if(h>0){y-=h;s+='<rect x="'+(i*bw+3)+'" y="'+y+'" width="'+(bw-6)+'" height="'+h+'" fill="'+colr[v]+'"/>'}});
+   if(i%3===0)s+='<text x="'+(i*bw+bw/2)+'" y="'+(Ht+14)+'" font-size="9" fill="#5b6977" text-anchor="middle">'+cairo(now-(H-1-i)*3.6e6).slice(0,2)+':00</text>'});
+  $('#vol').innerHTML=s+'</svg><div style="margin-top:6px">'+SEV.map(v=>'<span class="sv s-'+v+'" style="margin-right:14px"><i></i>'+v+'</span>').join('')+'</div>';
+  const st={};S.alerts.forEach(a=>st[a.status]=(st[a.status]||0)+1);const sm=Math.max(1,...Object.values(st));
+  $('#stat').innerHTML=Object.entries(st).sort((a,b)=>b[1]-a[1]).map(e=>'<div style="display:flex;gap:8px;align-items:center;margin:5px 0">'+stc(e[0])+'<div class="hb" style="flex:1"><i style="width:'+(100*e[1]/sm)+'%"></i></div><span class="mono">'+e[1]+'</span></div>').join('')||'<span class="dim">No alerts</span>';
+  const tc=M.by_tactic.slice(0,7),tm=Math.max(1,...tc.map(x=>x[1]));
+  $('#tacs').innerHTML=tc.map(e=>'<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><span style="width:140px;color:var(--mut)">'+esc(e[0])+'</span><div class="hb" style="flex:1"><i style="width:'+(100*e[1]/tm)+'%"></i></div><span class="mono">'+e[1]+'</span></div>').join('');
+  const ap=await api('/api/approvals');
+  $('#pend').innerHTML=th(['Pri','Alert','Action','Target'])+(ap.rows.slice(0,6).map(r=>'<tr class="row" data-a="'+r.alert_id+'"><td>'+pri(r.priority)+'</td><td>'+aid(r.alert_id)+'</td><td class="mono">'+esc(r.action)+'</td><td class="mono">'+esc(r.target)+'</td></tr>').join('')||emptyRow(4,'Nothing waiting for a decision'));
+  const att=open.slice().sort((a,b)=>(a.priority||'P9').localeCompare(b.priority||'P9')||a.t-b.t).slice(0,7);
+  $('#attn').innerHTML=th(['Pri','Alert','Age','Status'])+(att.map(a=>'<tr class="row" data-a="'+a.id+'"><td>'+pri(a.priority)+'</td><td>'+esc(a.rule)+'<br><small class="mono">'+aid(a.id)+'</small></td><td class="nw">'+ago((now-a.t)/60000)+'</td><td>'+stc(a.status)+'</td></tr>').join('')||emptyRow(4,'Queue is clear'));
+  $$('#view tr.row').forEach(r=>r.onclick=()=>openAlert(+r.dataset.a))}};
+
+/* ---------------- Alert queue ---------------- */
+const Queue={live:true,init(el){
+  const f=S.f;
+  el.innerHTML='<div class="panel"><div class="bar"><select id="fs"><option value="open">Open</option><option value="all">All statuses</option>'+['Pending Approval','Triaged','Investigating','Escalated','Contained','Resolved','Closed'].map(x=>'<option>'+x+'</option>').join('')+'</select>'+
+  '<select id="fv"><option value="all">All severities</option>'+SEV.map(x=>'<option>'+x+'</option>').join('')+'</select><select id="fa"><option value="all">AI: any</option><option value="True Positive">AI: true positive</option><option value="Needs investigation">AI: needs investigation</option><option value="Likely false positive">AI: likely FP</option></select>'+
+  '<input id="fq" placeholder="Search rule, user, IP, asset, ID" style="width:260px"><span class="sp"></span><small id="fc"></small></div><div class="pb np"><table class="tbl" id="qt"></table></div></div>';
+  $('#fs').value=f.status;$('#fv').value=f.sev;$('#fa').value=f.ai;$('#fq').value=f.q;
+  [['#fs','status'],['#fv','sev'],['#fa','ai']].forEach(p=>$(p[0]).onchange=e=>{f[p[1]]=e.target.value;Queue.update()});
+  $('#fq').oninput=e=>{f.q=e.target.value.toLowerCase();Queue.update()}},
+ update(){const f=S.f,now=S.now*1000;
+  let l=S.alerts.filter(a=>(f.status==='all'||(f.status==='open'?isOpen(a):a.status===f.status))&&(f.sev==='all'||a.sev===f.sev)&&(f.ai==='all'||a.ai_verdict===f.ai)&&
+   (!f.q||(a.rule+a.user+a.ip+a.asset+aid(a.id)).toLowerCase().includes(f.q)));
+  l.sort((a,b)=>f.status==='open'?((a.priority||'P9').localeCompare(b.priority||'P9')||b.t-a.t):b.t-a.t);
+  $('#fc').textContent=l.length+' alert'+(l.length===1?'':'s');
+  $('#qt').innerHTML=th(['Pri','Alert','Time','Severity','Rule','Entity','Asset','Score','Status','AI'])+(l.slice(0,120).map(a=>'<tr class="row" data-a="'+a.id+'"><td>'+pri(a.priority)+'</td><td class="mono nw">'+aid(a.id)+'</td><td class="nw">'+cairo(a.t,true)+'</td><td>'+sev(a.sev)+'</td><td>'+esc(a.rule)+'</td><td class="mono">'+esc(a.user)+'<br><small>'+esc(a.ip)+'</small></td><td class="mono">'+esc(a.asset)+'</td><td class="mono">'+a.score+'</td><td>'+stc(a.status)+'</td><td>'+aiTag(a.ai_verdict,a.ai_conf)+'</td></tr>').join('')||emptyRow(10,'No alerts match the filters'));
+  $$('#qt tr.row').forEach(r=>r.onclick=()=>openAlert(+r.dataset.a))}};
+
+/* ---------------- Alert drawer ---------------- */
+const D={id:null,tab:'summary',data:null};
+async function openAlert(id,tab){D.id=id;if(tab)D.tab=tab;await reloadDrawer();$('#drawer').classList.add('open')}
+function closeDrawer(){$('#drawer').classList.remove('open');D.id=null}
+async function reloadDrawer(){try{D.data=await api('/api/alert?id='+D.id);renderDrawer()}catch(e){toast(e.message,true)}}
+async function afterChange(msg){if(msg)toast(msg);await loadState();await reloadDrawer();const p=PAGES[cur];if(p&&p.live)p.update()}
+function renderDrawer(){
+  const d=D.data,a=d.alert,open=isOpen(a);
+  $('#drawer').innerHTML='<div class="dh"><div style="display:flex;gap:8px;align-items:center"><span class="mono dim">'+aid(a.id)+'</span>'+pri(a.priority)+sev(a.sev)+stc(a.status)+'<span class="sp"></span><button class="btn sm" id="dx">Close</button></div>'+
+   '<h2>'+esc(a.rule)+'</h2><small>'+esc(d.rule_desc)+'</small><div class="tabs">'+[['summary','Summary'],['ai','AI analyst'],['evidence','Evidence'],['actions','Response ('+d.actions.filter(x=>x.state==='pending').length+' pending)'],['notes','Notes &amp; timeline']].map(t=>'<a data-t="'+t[0]+'" class="'+(D.tab===t[0]?'on':'')+'">'+t[1]+'</a>').join('')+'</div></div>'+
+   '<div class="db">'+({summary:tSummary,ai:tAI,evidence:tEvidence,actions:tActions,notes:tNotes}[D.tab])(d)+'</div>'+
+   '<div class="df">'+(open?'<button class="btn" data-g="invest">Investigate</button><button class="btn" data-g="escalate">Escalate</button><button class="btn ok" data-g="resolve">Resolve as true positive</button><button class="btn" data-g="close">Close as benign / FP</button><button class="btn" data-g="suppress">Tune: suppress</button>':'<button class="btn" data-g="invest">Reopen</button>')+'<span class="sp"></span><button class="btn pri" data-g="pdf">Escalation report PDF</button></div>';
+  $('#dx').onclick=closeDrawer;$$('#drawer .tabs a').forEach(t=>t.onclick=()=>{D.tab=t.dataset.t;renderDrawer()});
+  $$('#drawer [data-g]').forEach(b=>b.onclick=()=>drawerAct(b.dataset.g,a));bindTab(d)}
+const kv=r=>'<dl class="kv">'+r.map(x=>'<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>').join('')+'</dl>';
+function tSummary(d){const a=d.alert;return kv([['Detected',cairo(a.t,true)+' Cairo'],['Detection',esc(a.detail)],['ATT&CK',esc(a.tactic)+' / '+esc(a.tech)],['User',esc(a.user)],['Source IP','<span class="mono">'+esc(a.ip)+'</span>'],['Asset','<span class="mono">'+esc(a.asset)+'</span>'],
+  ['SOAR triage',esc(a.verdict)+' (score '+a.score+')'],['Scoring',esc(a.rationale)],['Playbook',esc(a.pb)],['Time to detect',a.ttd+' min'],['Assignee',esc(a.assignee||'unassigned')],['Disposition',esc(a.disposition||'open')]])+
+  (d.actions.some(x=>x.state==='pending')?'<div class="box rec"><h5>Decision needed</h5>'+d.actions.filter(x=>x.state==='pending').length+' containment action(s) wait for your approval. Open the Response tab.</div>':'')}
+function tAI(d){const x=d.ai;if(!x)return '<div class="box">No assessment yet.</div><button class="btn pri" data-ai="reassess">Run assessment</button>';
+  const li=(t,arr)=>arr&&arr.length?'<div class="box"><h5>'+t+'</h5><ul>'+arr.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></div>':'';
+  const rc=x.soar_recommendation;
+  let h='<div style="display:flex;gap:10px;align-items:center">'+aiTag(x.verdict,x.confidence)+'<b>'+esc(x.verdict)+'</b><span class="dim">suggests '+esc(x.suggested_severity)+' severity</span></div><div class="meter"><i style="width:'+x.confidence+'%"></i></div>'+
+   '<p>'+esc(x.summary)+'</p>'+li('Why',x.reasoning)+li('Benign indicators',x.benign_indicators)+
+   (x.similar_cases&&x.similar_cases.length?'<div class="box"><h5>Similar cases already reviewed by analysts</h5>'+x.similar_cases.map(c=>'<div>'+aid(c.id)+' - '+esc(c.disposition)+(c.note?' <small>('+esc(c.note.slice(0,110))+')</small>':'')+'</div>').join('')+'</div>':'')+
+   (x.calibration?'<div class="box"><h5>Calibration</h5>'+esc(x.calibration)+'</div>':'')+
+   '<div class="box rec '+esc(rc.decision)+'"><h5>Recommendation on containment (you decide)</h5><b>'+esc({approve:'Approve',reject:'Do not approve',review:'Validate first',none:'No action pending'}[rc.decision])+'</b> - '+esc(rc.reason)+'</div>'+
+   li('Questions to confirm',x.questions)+li('Suggested next steps',x.next_steps);
+  if(x.llm)h+='<div class="box"><h5>Second opinion - '+esc(x.llm.model)+'</h5>'+esc(x.llm.summary)+'<br><small>Verdict: '+esc(x.llm.verdict||'n/a')+(x.llm.agrees===false?' (differs from the analyst engine)':x.llm.agrees?' (agrees)':'')+'</small></div>';
+  if(x.llm_error)h+='<div class="msg bad">LLM: '+esc(x.llm_error)+'</div>';
+  if(x.valor)h+='<div class="box"><h5>VALOR analyst response</h5><pre class="mono" style="white-space:pre-wrap;margin:0">'+esc(JSON.stringify(x.valor,null,1).slice(0,1600))+'</pre></div>';
+  if(x.valor_error)h+='<div class="msg bad">VALOR: '+esc(x.valor_error)+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-ai="reassess">Re-run assessment</button><button class="btn" data-ai="llm">Ask LLM (Ollama)</button><button class="btn" data-ai="valor">Ask VALOR analyst</button></div><small class="dim">Backend: '+esc(x.backend)+'</small>';
+  h+='<div class="box" style="margin-top:14px"><h5>Your feedback on this assessment</h5>'+(d.feedback.length?d.feedback.map(f=>'<div><b>'+esc(f.rating)+'</b> by '+esc(f.analyst)+(f.correct_verdict?' - correct verdict: '+esc(f.correct_verdict):'')+(f.comment?'<br><small>'+esc(f.comment)+'</small>':'')+'</div>').join('')+'<hr style="border:0;border-top:1px solid var(--line)">':'')+
+   '<label><input type="radio" name="fb" value="agree" checked> Agree</label> &nbsp; <label><input type="radio" name="fb" value="partially"> Partly</label> &nbsp; <label><input type="radio" name="fb" value="disagree"> Disagree</label>'+
+   '<div style="margin:8px 0"><select id="fbv"><option value="">Correct verdict (required if you disagree)</option><option>True Positive</option><option>Needs investigation</option><option>Likely false positive</option></select></div><textarea id="fbc" rows="3" placeholder="What did the AI miss or get right? This is used for calibration and sent to VALOR."></textarea><div style="margin-top:8px"><button class="btn pri" id="fbs">Submit feedback</button></div></div>';
+  return h}
+function tEvidence(d){return '<small>Events for the same user or IP within 30 minutes of the alert.</small><div class="res" style="max-height:none;margin-top:8px"><table class="tbl">'+th(['Time','Type','User','IP','Ctry','Asset','Detail'])+(d.events.map(e=>'<tr><td class="mono nw">'+cairo(e.ts*1000)+'</td><td class="mono">'+esc(e.etype)+(e.ok===0&&['login','payment','mfa'].includes(e.etype)?' <span class="dim">fail</span>':'')+'</td><td class="mono">'+esc(e.user)+'</td><td class="mono">'+esc(e.ip)+'</td><td>'+esc(e.country)+'</td><td class="mono">'+esc(e.asset)+'</td><td class="mono">'+esc(e.detail||(e.amount?e.amount.toFixed(2):''))+'</td></tr>').join('')||emptyRow(7,'No related events'))+'</table></div>'}
+function tActions(d){const ai=d.ai&&d.ai.soar_recommendation;
+  return '<div class="box"><h5>Policy</h5>Safe steps (enrichment, notifications, tickets) run automatically. Disruptive steps wait here until an analyst approves them. Every decision is written to the audit log.</div>'+
+   (d.actions.some(x=>x.state==='pending')&&ai?'<div class="box rec '+esc(ai.decision)+'"><h5>AI recommendation</h5>'+esc(ai.reason)+'</div>':'')+
+   '<table class="tbl">'+th(['Action','Target','Type','State','Detail',''])+(d.actions.map(x=>'<tr><td class="mono">'+esc(x.action)+'</td><td class="mono">'+esc(x.target||'-')+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.state)+'</td><td><small>'+esc(x.reason?x.reason+' - ':'')+esc(x.result||'')+(x.decided_by?' ['+esc(x.decided_by)+']':'')+'</small></td><td class="nw">'+(x.state==='pending'?'<button class="btn ok sm" data-ap="'+x.id+'">Approve</button> <button class="btn bad sm" data-rj="'+x.id+'">Reject</button>':'')+'</td></tr>').join('')||emptyRow(6,'No actions'))+'</table>'}
+function tNotes(d){const items=[];d.notes.forEach(n=>items.push({t:n.ts,w:n.author,k:n.kind,x:n.text}));d.timeline.forEach(n=>items.push({t:n.ts,w:n.actor,k:n.action.toLowerCase().replace(/_/g,' '),x:n.detail}));items.sort((a,b)=>a.t-b.t);
+  return '<div class="box"><textarea id="nt" rows="3" placeholder="Add an investigation note"></textarea><div style="margin-top:6px"><button class="btn pri" id="nts">Add note</button></div></div><table class="tbl">'+th(['Time','Who','Event'])+(items.map(i=>'<tr><td class="mono nw">'+cairo(i.t*1000,true)+'</td><td>'+esc(i.w)+'</td><td><span class="dim">'+esc(i.k)+'</span> '+esc(i.x)+'</td></tr>').join('')||emptyRow(3,'Nothing yet'))+'</table>'}
+function bindTab(d){const a=d.alert;
+  $$('#drawer [data-ai]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api('/api/ai/assess',{id:a.id,llm:b.dataset.ai==='llm',valor:b.dataset.ai==='valor'});await afterChange('Assessment updated')}catch(e){toast(e.message,true);b.disabled=false}});
+  const fb=$('#fbs');if(fb)fb.onclick=async()=>{try{const r=await api('/api/ai/feedback',{alert_id:a.id,rating:$('input[name=fb]:checked').value,correct_verdict:$('#fbv').value,comment:$('#fbc').value});await afterChange('Feedback saved'+(r.forwarded_to_valor?' and sent to VALOR':''))}catch(e){toast(e.message,true)}};
+  $$('#drawer [data-ap]').forEach(b=>b.onclick=()=>modal({title:'Approve action',body:'This executes immediately and is recorded under your name.',ok:'Approve and execute',cls:'ok',fields:[{k:'reason',label:'Comment (optional)',type:'textarea'}],
+    onSubmit:async v=>{const r=await api('/api/action/decide',{action_id:+b.dataset.ap,decision:'approve',reason:v.reason});await afterChange(r.result)}}));
+  $$('#drawer [data-rj]').forEach(b=>b.onclick=()=>modal({title:'Reject action',body:'The action will not run. Say why, so the AI and your colleagues can learn from it.',ok:'Reject action',cls:'bad',fields:[{k:'reason',label:'Reason',type:'textarea',required:true}],
+    onSubmit:async v=>{await api('/api/action/decide',{action_id:+b.dataset.rj,decision:'reject',reason:v.reason});await afterChange('Action rejected')}}));
+  const ns=$('#nts');if(ns)ns.onclick=async()=>{const t=$('#nt').value.trim();if(!t)return;try{await api('/api/alert/note',{id:a.id,text:t});await afterChange()}catch(e){toast(e.message,true)}}}
+function drawerAct(g,a){const upd=(b,m)=>api('/api/alert/update',Object.assign({id:a.id},b)).then(()=>afterChange(m));
+  if(g==='pdf')return window.open('/api/report/alert?id='+a.id+'&actor='+q(who()),'_blank');
+  if(g==='invest')return upd({status:'Investigating'},'Marked as investigating').catch(e=>toast(e.message,true));
+  if(g==='escalate')return modal({title:'Escalate '+aid(a.id),ok:'Escalate',fields:[{k:'to',label:'Escalate to',type:'select',options:['L2 analyst','IR lead','Fraud operations','CISO'],value:'L2 analyst'},{k:'note',label:'Reason and what you have done so far',type:'textarea',required:true}],onSubmit:v=>upd({status:'Escalated',to:v.to,note:v.note},'Escalated to '+v.to)});
+  if(g==='resolve')return modal({title:'Resolve as true positive',ok:'Resolve',cls:'ok',fields:[{k:'note',label:'Outcome (what happened, what was done)',type:'textarea',required:true}],onSubmit:v=>upd({status:'Resolved',disposition:'True Positive',note:v.note},'Resolved')});
+  if(g==='close')return modal({title:'Close as benign or false positive',ok:'Close alert',fields:[{k:'disposition',label:'Disposition',type:'select',options:['False Positive','Benign True Positive'],hint:'Benign true positive: the detection was right but the activity was authorised.'},{k:'note',label:'Why is this benign?',type:'textarea',required:true}],onSubmit:v=>upd({status:'Closed',disposition:v.disposition,note:v.note},'Closed')});
+  if(g==='suppress')return modal({title:'Suppress similar alerts',body:'Stops this rule from alerting on the same entity until the suppression expires. Use for confirmed benign, recurring activity.',ok:'Create suppression',fields:[{k:'user',label:'User (optional)',value:/^(multiple|anonymous)/.test(a.user)?'':a.user},{k:'ip',label:'Source IP (optional)',value:a.ip},{k:'days',label:'Duration',type:'select',options:['7','14','30','90'],value:'7'},{k:'reason',label:'Reason',type:'textarea',required:true}],
+    onSubmit:async v=>{await api('/api/suppress',{rule_id:a.rule_id,user:v.user,ip:v.ip,days:+v.days,reason:v.reason});toast('Suppression created')}})}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&D.id&&!$('.ov'))closeDrawer()});
+
+/* ---------------- Approvals ---------------- */
+const Approvals={live:true,init(el){el.innerHTML='<div class="panel"><div class="ph">Containment actions waiting for an analyst decision</div><div class="pb np"><table class="tbl" id="at"></table></div></div><p class="dim" style="max-width:760px">Nothing disruptive runs without a person. The AI recommendation is advice, not a decision - read the evidence in the alert before you approve.</p>'},
+ async update(){const r=await api('/api/approvals'),now=S.now;
+  $('#at').innerHTML=th(['Pri','Alert','Action','Target','Waiting','Score','AI view',''])+(r.rows.map(x=>'<tr><td>'+pri(x.priority)+'</td><td class="row" data-a="'+x.alert_id+'" style="cursor:pointer">'+esc(x.rule)+'<br><small class="mono">'+aid(x.alert_id)+' - '+esc(x.user)+'</small></td><td class="mono">'+esc(x.action)+'</td><td class="mono">'+esc(x.target)+'</td><td class="nw">'+ago((now-x.requested_ts)/60)+'</td><td class="mono">'+x.score+'</td><td>'+aiTag(x.ai_verdict,x.ai_conf)+'<br><small>'+esc({approve:'recommends approve',reject:'recommends reject',review:'validate first',none:''}[x.ai_rec]||'')+'</small></td><td class="nw"><button class="btn ok sm" data-ap="'+x.action_id+'">Approve</button> <button class="btn bad sm" data-rj="'+x.action_id+'">Reject</button></td></tr>').join('')||emptyRow(8,'No pending approvals'));
+  $$('#at [data-a]').forEach(c=>c.onclick=()=>openAlert(+c.dataset.a,'ai'));
+  const done=async()=>{await loadState();Approvals.update()};
+  $$('#at [data-ap]').forEach(b=>b.onclick=()=>modal({title:'Approve action',body:'This executes immediately and is recorded under your name.',ok:'Approve and execute',cls:'ok',fields:[{k:'reason',label:'Comment (optional)',type:'textarea'}],onSubmit:async v=>{const r=await api('/api/action/decide',{action_id:+b.dataset.ap,decision:'approve',reason:v.reason});toast(r.result);await done()}}));
+  $$('#at [data-rj]').forEach(b=>b.onclick=()=>modal({title:'Reject action',ok:'Reject action',cls:'bad',fields:[{k:'reason',label:'Reason',type:'textarea',required:true}],onSubmit:async v=>{await api('/api/action/decide',{action_id:+b.dataset.rj,decision:'reject',reason:v.reason});toast('Action rejected');await done()}}))}};
+
+/* ---------------- Detections ---------------- */
+let PREFILL=null;
+const SQLT="SELECT MAX(ts) AS ts, user, MIN(ip) AS ip, MIN(asset) AS asset,\n       COUNT(*)||' failed logins in 10 min' AS detail\nFROM events\nWHERE etype='login' AND ok=0\nGROUP BY user, ts/600\nHAVING COUNT(*) >= 10";
+const SCHEMA_HINT='<details style="margin-top:10px"><summary class="dim" style="cursor:pointer">Data model and rules of the road</summary><div class="box"><b>events</b>(ts, etype, user, ip, country, asset, ua, ok, amount, detail)<br><b>etype</b>: login, payment, payout, api, kyc_read, db_query, vpn, mfa, role_grant, webhook_change, refund, proc, conn, sim_swap, password_reset, new_device<br><b>alerts</b> is also readable. Only a single SELECT runs (read-only, 5 s limit).<br>A detection must return <b>ts, user, ip, asset, detail</b>. Group by a time bucket (ts/600) so repeated activity becomes one alert.</div></details>';
+const Det={live:false,rules:[],pbs:[],tactics:[],ed:null,
+ init(el){el.innerHTML='<div class="two"><div class="col"><div class="panel"><div class="ph">Detection rules<span class="sp"></span><button class="btn pri sm" id="rnew">New rule</button></div><div class="pb np"><table class="tbl" id="rtab"></table></div></div>'+
+  '<div class="panel"><div class="ph">Suppressions (tuning)</div><div class="pb np"><table class="tbl" id="stab"></table></div></div></div><div class="col"><div class="panel" id="red"></div></div></div>';
+  $('#rnew').onclick=()=>Det.edit(null);Det.ed=null;Det.form()},
+ async update(){const r=await api('/api/rules');Det.rules=r.rules;Det.pbs=r.playbooks;Det.tactics=r.tactics;Det.draw();const s=await api('/api/suppressions');Det.supp(s.rows);
+  if(PREFILL){const p=PREFILL;PREFILL=null;Det.edit(null,p)}},
+ draw(){$('#rtab').innerHTML=th(['ID','Rule','Severity','Tactic','24h','Precision','On',''])+Det.rules.map(r=>'<tr><td class="mono">'+esc(r.id)+'</td><td>'+esc(r.name)+(r.origin==='custom'?' <span class="pr">custom</span>':'')+'<br><small>v'+r.version+' - '+esc(r.updated_by||'')+'</small></td><td>'+sev(r.sev)+'</td><td>'+esc(r.tactic)+'</td><td class="mono">'+r.alerts_24h+'</td><td class="mono">'+(r.precision==null?'<span class="dim">-</span>':r.precision+'%')+'<br><small>'+(r.tp+r.fp+r.btp)+' reviewed</small></td><td><button class="btn sm '+(r.enabled?'ok':'')+'" data-t="'+r.id+'">'+(r.enabled?'On':'Off')+'</button></td><td><button class="btn sm" data-e="'+r.id+'">Edit</button></td></tr>').join('');
+  $$('#rtab [data-t]').forEach(b=>b.onclick=async()=>{const r=Det.rules.find(x=>x.id===b.dataset.t);try{await api('/api/rules/toggle',{id:r.id,enabled:!r.enabled});toast(r.id+(r.enabled?' disabled':' enabled'));Det.update()}catch(e){toast(e.message,true)}});
+  $$('#rtab [data-e]').forEach(b=>b.onclick=()=>Det.edit(Det.rules.find(x=>x.id===b.dataset.e)))},
+ supp(rows){$('#stab').innerHTML=th(['Rule','Entity','Reason','By','Expires',''])+(rows.map(s=>'<tr><td class="mono">'+esc(s.rule_id)+'</td><td class="mono">'+esc(s.user||'*')+'<br><small>'+esc(s.ip||'*')+'</small></td><td>'+esc(s.reason)+'</td><td>'+esc(s.created_by)+'</td><td class="nw">'+(s.active?cairo(s.expires_ts*1000,true):'<span class="dim">expired</span>')+'</td><td><button class="btn sm bad" data-s="'+s.id+'">Remove</button></td></tr>').join('')||emptyRow(6,'No suppressions'));
+  $$('#stab [data-s]').forEach(b=>b.onclick=async()=>{try{await api('/api/suppress/delete',{id:+b.dataset.s});Det.update()}catch(e){toast(e.message,true)}})},
+ edit(r,pre){Det.ed=r?Object.assign({},r):Object.assign({id:null,name:'',description:'',sev:'Medium',tactic:'Credential Access',tech:'',playbook:'Enrich IP + Ticket',bucket:600,sql:SQLT,enabled:1,origin:'custom'},pre||{});Det.form()},
+ form(){const e=Det.ed,el=$('#red');if(!e){el.innerHTML='<div class="ph">Rule editor</div><div class="pb dim">Pick a rule to tune it, or create a new detection. Always test against real data before saving.</div>';return}
+  const sel=(id,opts,v)=>'<select id="'+id+'">'+opts.map(o=>'<option'+(String(o)===String(v)?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
+  el.innerHTML='<div class="ph">'+(e.id?'Edit '+esc(e.id):'New detection rule')+'</div><div class="pb"><label class="fl"><span>Name</span><input id="rn" value="'+esc(e.name)+'"></label><label class="fl"><span>Description</span><input id="rd" value="'+esc(e.description||'')+'"></label>'+
+   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px"><label class="fl"><span>Severity</span>'+sel('rs',SEV,e.sev)+'</label><label class="fl"><span>ATT&amp;CK tactic</span>'+sel('rt',Det.tactics,e.tactic)+'</label>'+
+   '<label class="fl"><span>Technique ID</span><input id="rq" value="'+esc(e.tech||'')+'" placeholder="T1110"></label><label class="fl"><span>Response playbook</span>'+sel('rp',Det.pbs,e.playbook)+'</label></div>'+
+   '<label class="fl"><span>Alert de-duplication window (seconds)</span>'+sel('rb',[300,600,1800,3600,86400],e.bucket)+'</label><label class="fl"><span>Detection query (SQL)</span><textarea id="rsql" class="code" rows="10" spellcheck="false">'+esc(e.sql)+'</textarea></label>'+
+   '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="rtest">Test on live data</button><button class="btn pri" id="rsave">Save rule</button>'+(e.id&&e.origin==='custom'?'<button class="btn bad" id="rdel">Delete</button>':'')+'<span class="sp"></span><button class="btn" id="rx">Close</button></div><div id="rres"></div>'+SCHEMA_HINT+'</div>';
+  const body=()=>({id:e.id,name:$('#rn').value.trim(),description:$('#rd').value.trim(),sev:$('#rs').value,tactic:$('#rt').value,tech:$('#rq').value.trim(),playbook:$('#rp').value,bucket:+$('#rb').value,sql:$('#rsql').value,enabled:e.enabled});
+  $('#rx').onclick=()=>{Det.ed=null;Det.form()};
+  $('#rtest').onclick=async()=>{const o=$('#rres');try{const t=await api('/api/rules/test',{sql:$('#rsql').value});o.innerHTML='<div class="msg good">Valid. The query returns '+t.count+(t.truncated?'+':'')+' row(s) over the stored data. Each row (per window) would become an alert.</div>'+(t.sample.length?'<div class="res"><table class="tbl">'+th(t.cols.map(esc))+t.sample.map(r=>'<tr>'+r.map(c=>'<td class="mono">'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table></div>':'')}catch(x){o.innerHTML='<div class="msg bad">'+esc(x.message)+'</div>'}};
+  $('#rsave').onclick=async()=>{try{const r=await api('/api/rules/save',body());toast('Saved '+r.id+' ('+r.test.count+' matching rows). It runs on the next detection cycle.');Det.ed=null;Det.form();Det.update()}catch(x){$('#rres').innerHTML='<div class="msg bad">'+esc(x.message)+'</div>'}};
+  const d=$('#rdel');if(d)d.onclick=()=>modal({title:'Delete '+e.id,body:'Alerts already raised by this rule are kept.',ok:'Delete rule',cls:'bad',onSubmit:async()=>{await api('/api/rules/delete',{id:e.id});Det.ed=null;Det.form();Det.update()}})}};
+
+/* ---------------- Threat hunting ---------------- */
+const HSQL="SELECT user, COUNT(*) AS failed_logins, COUNT(DISTINCT ip) AS ips\nFROM events\nWHERE etype='login' AND ok=0\nGROUP BY user\nORDER BY failed_logins DESC\nLIMIT 20";
+const Hunt={live:false,hunts:[],tactics:[],statuses:[],cur:null,last:null,
+ init(el){el.innerHTML='<div class="two"><div class="panel"><div class="ph">Hunts<span class="sp"></span><button class="btn sm" id="hall">Run all</button><button class="btn pri sm" id="hnew">New hunt</button></div><div class="pb np"><table class="tbl" id="htab"></table></div></div>'+
+  '<div class="panel" id="hwb"></div></div><div class="panel" style="margin-top:14px"><div class="ph">Results<span class="sp"></span><small id="hmeta"></small><button class="btn sm" id="hcsv">Export CSV</button></div><div class="pb np" id="hres"><div class="empty dim" style="padding:18px">Run a hunt or a query to see results.</div></div></div>';
+  Hunt.cur=null;Hunt.last=null;$('#hnew').onclick=()=>Hunt.open(null);$('#hall').onclick=Hunt.runAll;$('#hcsv').onclick=Hunt.csv;Hunt.form()},
+ async update(){const r=await api('/api/hunts');Hunt.hunts=r.hunts;Hunt.tactics=r.tactics;Hunt.statuses=r.statuses;Hunt.draw()},
+ draw(){$('#htab').innerHTML=th(['ID','Hunt','Tactic','Status','Last run','Leads',''])+Hunt.hunts.map(h=>'<tr><td class="mono">'+esc(h.id)+'</td><td>'+esc(h.name)+(h.origin==='custom'?' <span class="pr">custom</span>':'')+'</td><td>'+esc(h.tactic)+'</td><td>'+esc(h.status)+'</td><td class="nw">'+(h.last_run_ts?cairo(h.last_run_ts*1000,true):'<span class="dim">never</span>')+'</td><td class="mono">'+(h.last_leads==null?'-':h.last_leads)+'</td><td class="nw"><button class="btn sm" data-r="'+h.id+'">Run</button> <button class="btn sm" data-o="'+h.id+'">Open</button></td></tr>').join('');
+  $$('#htab [data-r]').forEach(b=>b.onclick=()=>Hunt.run(b.dataset.r));$$('#htab [data-o]').forEach(b=>b.onclick=()=>Hunt.open(Hunt.hunts.find(x=>x.id===b.dataset.o)))},
+ show(res,title){Hunt.last=res;$('#hmeta').textContent=title+' - '+res.count+' row(s)'+(res.truncated?' (truncated)':'')+' - '+res.ms+' ms ';
+  $('#hres').innerHTML='<table class="tbl">'+th(res.cols.map(esc))+(res.rows.map(r=>'<tr>'+r.map(c=>'<td class="mono">'+esc(c)+'</td>').join('')+'</tr>').join('')||emptyRow(res.cols.length||1,'No rows - nothing found'))+'</table>'},
+ async run(id){try{const r=await api('/api/hunts/run',{id});Hunt.show(r,id+' '+r.name);toast(id+': '+r.count+' lead(s)');Hunt.update()}catch(e){toast(e.message,true)}},
+ async runAll(){for(const h of Hunt.hunts){try{await api('/api/hunts/run',{id:h.id})}catch(e){}}toast('All hunts executed');Hunt.update()},
+ csv(){const r=Hunt.last;if(!r){toast('Nothing to export yet',true);return}const c=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const blob=new Blob([[r.cols.map(c).join(',')].concat(r.rows.map(x=>x.map(c).join(','))).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nilepay_hunt.csv';document.body.appendChild(a);a.click();a.remove()},
+ open(h){Hunt.cur=h?Object.assign({},h):{id:null,name:'',tactic:'Credential Access',status:'Planned',hyp:'',sql:HSQL,findings:'',origin:'custom'};Hunt.form()},
+ form(){const h=Hunt.cur,el=$('#hwb');if(!h){el.innerHTML='<div class="ph">Workbench</div><div class="pb"><div class="dim">Open a hunt, or start a new one. The workbench runs read-only queries over the event store.</div><button class="btn pri" id="wq" style="margin-top:10px">Free query</button></div>';$('#wq').onclick=()=>Hunt.open(null);return}
+  const sel=(id,o,v)=>'<select id="'+id+'">'+o.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select>';
+  el.innerHTML='<div class="ph">Workbench - '+(h.id?esc(h.id):'new hunt')+'</div><div class="pb"><label class="fl"><span>Hunt name</span><input id="hn" style="width:100%" value="'+esc(h.name)+'"></label><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px"><label class="fl"><span>ATT&amp;CK tactic</span>'+sel('ht',Hunt.tactics,h.tactic)+'</label><label class="fl"><span>Status</span>'+sel('hs',Hunt.statuses,h.status)+'</label></div>'+
+   '<label class="fl"><span>Hypothesis</span><textarea id="hh" rows="2">'+esc(h.hyp||'')+'</textarea></label><label class="fl"><span>Query (SQL, read-only)</span><textarea id="hq" class="code" rows="9" spellcheck="false">'+esc(h.sql)+'</textarea></label><label class="fl"><span>Findings and next steps</span><textarea id="hf" rows="2">'+esc(h.findings||'')+'</textarea></label>'+
+   '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="hrun">Run query</button><button class="btn pri" id="hsave">'+(h.id?'Update hunt':'Save as hunt')+'</button><button class="btn" id="hprom">Promote to detection rule</button>'+(h.id&&h.origin==='custom'?'<button class="btn bad" id="hdel">Delete</button>':'')+'</div><div id="hmsg"></div>'+SCHEMA_HINT+'</div>';
+  const body=()=>({id:h.id,name:$('#hn').value.trim(),tactic:$('#ht').value,status:$('#hs').value,hyp:$('#hh').value.trim(),sql:$('#hq').value,findings:$('#hf').value.trim()});
+  $('#hrun').onclick=async()=>{try{const r=await api('/api/query',{sql:$('#hq').value});Hunt.show(r,'Ad-hoc query');$('#hmsg').innerHTML=''}catch(e){$('#hmsg').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'}};
+  $('#hsave').onclick=async()=>{try{const r=await api('/api/hunts/save',body());toast('Saved '+r.id);Hunt.cur=Object.assign(body(),{id:r.id,origin:h.origin});await Hunt.update();Hunt.form()}catch(e){$('#hmsg').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'}};
+  $('#hprom').onclick=()=>{const b=body();if(!b.name){$('#hmsg').innerHTML='<div class="msg bad">Give the hunt a name first.</div>';return}PREFILL={name:b.name,description:b.hyp,tactic:b.tactic,sql:b.sql};location.hash='#detections'};
+  const d=$('#hdel');if(d)d.onclick=()=>modal({title:'Delete '+h.id,ok:'Delete hunt',cls:'bad',onSubmit:async()=>{await api('/api/hunts/delete',{id:h.id});Hunt.cur=null;Hunt.form();Hunt.update()}})}};
+
+/* ---------------- AI analyst ---------------- */
+const AIP={live:true,init(el){el.innerHTML='<div class="kpis" id="ak"></div><div class="two"><div class="col"><div class="panel"><div class="ph">Analyst backend</div><div class="pb" id="ab"></div></div><div class="panel"><div class="ph">Agreement by rule</div><div class="pb np"><table class="tbl" id="ar"></table></div></div></div>'+
+  '<div class="col"><div class="panel"><div class="ph">Recent analyst feedback<span class="sp"></span><a class="btn sm" href="/api/ai/feedback.jsonl" download style="text-decoration:none">Export JSONL</a></div><div class="pb np"><table class="tbl" id="af"></table></div></div>'+
+  '<div class="panel"><div class="ph">How the feedback loop works</div><div class="pb"><ol style="margin:0;padding-left:18px"><li>Each alert gets an explainable assessment with evidence, benign indicators and a recommendation.</li><li>Analysts close alerts with a disposition and rate the assessment.</li><li>Dispositions calibrate confidence for the same rule next time, and similar closed cases are shown to the next analyst.</li><li>Feedback is exported as JSONL and, if configured, forwarded to the VALOR feedback-ingestion workflow to update its RAG store.</li></ol></div></div></div></div>'},
+ async update(){const s=await api('/api/ai/stats'),b=s.backend;
+  $('#ak').innerHTML=[['Assessments',s.assessments],['Analyst reviews',s.feedback_count],['Analyst agreement',s.agreement_pct==null?'-':s.agreement_pct+'%'],['Accuracy vs dispositions',s.accuracy_pct==null?'-':s.accuracy_pct+'%','n='+s.accuracy_n]].map(k=>'<div class="kpi"><small>'+k[0]+'</small><b>'+k[1]+'</b><em>'+esc(k[2]||'')+'</em></div>').join('');
+  const row=(a,ok,t)=>'<div style="display:flex;gap:10px;margin:6px 0"><span style="width:170px;color:var(--mut)">'+a+'</span><span style="color:'+(ok?'#7fc7b6':'var(--dim)')+'">'+t+'</span></div>';
+  $('#ab').innerHTML=row('Analyst engine',true,'Ready - deterministic, explainable')+row('Local LLM (Ollama)',!!b.ollama,b.ollama?esc(b.ollama):'Not configured - set OLLAMA_URL (model llama3.1:8b)')+row('VALOR analyst webhook',b.valor_analyst,b.valor_analyst?'Connected':'Not configured - set VALOR_ANALYST_URL')+row('Feedback to VALOR RAG',b.feedback_forwarding,b.feedback_forwarding?'Forwarding':'Not configured - set VALOR_FEEDBACK_URL')+
+   '<div style="margin-top:8px"><small>Verdicts issued: '+Object.entries(s.by_verdict).map(e=>esc(e[0])+' '+e[1]).join(' - ')+'</small></div>';
+  $('#ar').innerHTML=th(['Rule','Reviews','Agreement'])+(s.by_rule.map(r=>'<tr><td>'+esc(r.rule||r.rule_id)+'</td><td class="mono">'+r.n+'</td><td class="mono">'+r.agreement_pct+'%</td></tr>').join('')||emptyRow(3,'No feedback yet'));
+  $('#af').innerHTML=th(['Alert','Analyst','Rating','Correct verdict','Comment'])+(s.recent.map(f=>'<tr class="row" data-a="'+f.alert_id+'"><td class="mono">'+aid(f.alert_id)+'</td><td>'+esc(f.analyst)+'</td><td>'+esc(f.rating)+'</td><td>'+esc(f.correct_verdict||'-')+'</td><td><small>'+esc((f.comment||'').slice(0,90))+'</small></td></tr>').join('')||emptyRow(5,'No feedback yet'));
+  $$('#af tr.row').forEach(r=>r.onclick=()=>openAlert(+r.dataset.a,'ai'))}};
+
+/* ---------------- Metrics ---------------- */
+const Metrics={live:true,init(el){el.innerHTML='<div class="kpis" id="mk"></div><div class="two"><div class="col"><div class="panel"><div class="ph">SLA by severity</div><div class="pb np"><table class="tbl" id="msla"></table></div></div><div class="panel"><div class="ph">Rule quality (analyst dispositions)</div><div class="pb np"><table class="tbl" id="mrq"></table></div></div></div>'+
+  '<div class="col"><div class="panel"><div class="ph">Open backlog (oldest first)</div><div class="pb np"><table class="tbl" id="mbk"></table></div></div><div class="panel"><div class="ph">Top source IPs and users</div><div class="pb np"><table class="tbl" id="mip"></table><table class="tbl" id="mus"></table></div></div></div></div>'+
+  '<div class="panel" style="margin-top:14px"><div class="ph">ATT&amp;CK coverage (rules + hunts)</div><div class="cov" id="mcov"></div></div>'},
+ async update(){const m=await api('/api/metrics'),a=m.approvals;
+  $('#mk').innerHTML=[['MTTD',m.mttd_min+' min'],['MTTA',m.mtta_min?m.mtta_min+' min':'-'],['MTTR',m.mttr_min?m.mttr_min+' min':'-'],['SLA compliance',m.sla_pct+'%'],['Open backlog',m.backlog,m.oldest_min?'oldest '+ago(m.oldest_min):''],['Approved / rejected',a.approved+' / '+a.rejected,'avg '+a.avg_decision_min+' min'],['False-positive rate',m.dispositioned?m.fp_rate+'%':'-',m.dispositioned+' closed'],['ATT&CK coverage',m.coverage_pct+'%',m.gaps.length+' gaps']].map(k=>'<div class="kpi"><small>'+k[0]+'</small><b>'+k[1]+'</b><em>'+esc(k[2]||'')+'</em></div>').join('');
+  $('#msla').innerHTML=th(['Severity','Target','Alerts','Past target','Compliance'])+m.sla.map(s=>'<tr><td>'+sev(s.sev)+'</td><td>'+s.target_min+' min</td><td class="mono">'+s.total+'</td><td class="mono">'+s.breached+'</td><td class="mono">'+s.pct+'%</td></tr>').join('');
+  $('#mrq').innerHTML=th(['Rule','Alerts','TP','Benign TP','FP','Precision'])+(m.rule_quality.map(r=>'<tr><td>'+esc(r.rule)+'</td><td class="mono">'+r.alerts+'</td><td class="mono">'+r.tp+'</td><td class="mono">'+r.btp+'</td><td class="mono">'+r.fp+'</td><td class="mono">'+(r.precision==null?'-':r.precision+'%')+'</td></tr>').join('')||emptyRow(6,'No data'));
+  $('#mbk').innerHTML=th(['Pri','Alert','Rule','Status','Age'])+(m.pending.map(p=>'<tr class="row" data-a="'+p.id+'"><td>'+pri(p.priority)+'</td><td class="mono">'+aid(p.id)+'</td><td>'+esc(p.rule)+'</td><td>'+stc(p.status)+'</td><td class="nw">'+ago(p.age_min)+'</td></tr>').join('')||emptyRow(5,'Backlog is empty'));
+  $$('#mbk tr.row').forEach(r=>r.onclick=()=>openAlert(+r.dataset.a));
+  $('#mip').innerHTML=th(['Source IP','Alerts','Reputation'])+m.top_ips.map(i=>'<tr><td class="mono">'+esc(i.ip)+'</td><td class="mono">'+i.count+'</td><td>'+esc(i.rep)+'</td></tr>').join('');
+  $('#mus').innerHTML=th(['User','Alerts'])+m.top_users.map(i=>'<tr><td class="mono">'+esc(i.user)+'</td><td class="mono">'+i.count+'</td></tr>').join('');
+  $('#mcov').innerHTML=m.coverage.map(c=>'<div class="'+(c.rules||c.hunts?'y':'n')+'"><b>'+esc(c.name)+'</b><br>'+c.rules+' rule(s), '+c.hunts+' hunt(s)</div>').join('')}};
+
+/* ---------------- GRC ---------------- */
+const CS={PASS:'#7fc7b6',WARN:'#f0c36a',FAIL:'#ff8a96'};
+const cs=s=>'<span class="st" style="color:'+CS[s]+';border-color:'+CS[s]+'66">'+s+'</span>';
+const GRC={live:true,init(el){el.innerHTML='<div class="kpis" id="gk"></div><div class="two"><div class="panel"><div class="ph">Framework scores</div><div class="pb" id="gfw"></div></div><div class="panel"><div class="ph">Risk register (from non-passing controls)</div><div class="pb np"><table class="tbl" id="grk"></table></div></div></div>'+
+  '<div class="panel" style="margin-top:14px"><div class="ph">Control assessment (automated)<span class="sp"></span><small>References are indicative - verify against the official texts</small></div><div class="pb np"><table class="tbl" id="gct"></table></div></div>'},
+ async update(){const g=await api('/api/grc');
+  $('#gk').innerHTML=[['Overall score',g.overall+'%'],['Pass',g.counts.PASS],['Warn',g.counts.WARN],['Fail',g.counts.FAIL],['Audit chain',g.audit.ok?'Valid':'BROKEN',g.audit.count+' records']].map(k=>'<div class="kpi"><small>'+k[0]+'</small><b>'+k[1]+'</b><em>'+esc(k[2]||'')+'</em></div>').join('');
+  $('#gfw').innerHTML=g.frameworks.map(f=>'<div style="margin:9px 0"><div style="display:flex"><span>'+esc(f.name)+'</span><span class="sp"></span><span class="mono">'+f.score+'%</span></div><div class="hb"><i style="width:'+f.score+'%"></i></div><small>'+f.pass+' pass / '+f.warn+' warn / '+f.fail+' fail of '+f.total+' mapped controls</small></div>').join('');
+  $('#grk').innerHTML=th(['Risk','Score','Owner','Treatment'])+(g.risks.map(r=>'<tr><td>'+esc(r.title)+'<br><small class="mono">'+esc(r.id)+' - '+esc(r.rating)+'</small></td><td class="mono">'+r.score+'</td><td>'+esc(r.owner)+'</td><td><small>'+esc(r.treatment)+'</small></td></tr>').join('')||emptyRow(4,'No open risks'));
+  $('#gct').innerHTML=th(['ID','Control','Status','Evidence','Mapped references'])+g.controls.map(c=>'<tr><td class="mono">'+c.id+'</td><td>'+esc(c.title)+'</td><td>'+cs(c.status)+'</td><td>'+esc(c.evidence)+'</td><td><small>'+esc(Object.entries(c.refs).map(e=>e[0]+' '+e[1]).join('; '))+'</small></td></tr>').join('')}};
+
+/* ---------------- Audit ---------------- */
+const Audit={live:true,rows:[],init(el){el.innerHTML='<div class="panel"><div class="bar"><span id="ach"></span><span class="sp"></span><input id="aq" placeholder="Filter actor, action, target" style="width:260px"></div><div class="pb np"><table class="tbl" id="atb"></table></div></div>';$('#aq').oninput=Audit.draw},
+ async update(){const a=await api('/api/audit');Audit.rows=a.rows;$('#ach').innerHTML='Hash chain: '+cs(a.chain.ok?'PASS':'FAIL').replace(/>[A-Z]+</,'>'+(a.chain.ok?'VALID':'BROKEN')+'<')+' <small>'+a.chain.count+' records, newest 150 shown</small>';Audit.draw()},
+ draw(){const f=($('#aq')||{value:''}).value.toLowerCase();$('#atb').innerHTML=th(['Time (Cairo)','Actor','Action','Target','Detail'])+(Audit.rows.filter(r=>!f||(r.actor+r.action+r.target+r.detail).toLowerCase().includes(f)).map(r=>'<tr><td class="mono nw">'+cairo(r.ts*1000,true)+'</td><td>'+esc(r.actor)+'</td><td class="mono">'+esc(r.action)+'</td><td class="mono">'+esc(r.target)+'</td><td><small>'+esc(r.detail)+'</small></td></tr>').join('')||emptyRow(5,'No entries'))}};
+
+/* ---------------- router / boot ---------------- */
+const PAGES={overview:Overview,queue:Queue,approvals:Approvals,detections:Det,hunting:Hunt,ai:AIP,metrics:Metrics,grc:GRC,audit:Audit};
+const TITLES={overview:'Shift overview',queue:'Alert queue',approvals:'Approvals',detections:'Detection engineering',hunting:'Threat hunting',ai:'AI analyst',metrics:'SOC metrics',grc:'GRC and compliance',audit:'Audit log'};
+const NAV=[['Monitor',[['overview','Overview'],['queue','Alert queue','bd-queue'],['approvals','Approvals','bd-approvals']]],['Engineer',[['detections','Detections'],['hunting','Threat hunting']]],['Assist',[['ai','AI analyst']]],['Assure',[['metrics','SOC metrics'],['grc','GRC and compliance'],['audit','Audit log']]]];
+let cur=null;
+$('#nav').innerHTML=NAV.map(g=>'<h6>'+g[0]+'</h6>'+g[1].map(n=>'<a data-p="'+n[0]+'"><span class="t">'+n[1]+'</span>'+(n[2]?'<span class="bd" id="'+n[2]+'">0</span>':'')+'</a>').join('')).join('');
+$$('#nav a').forEach(a=>a.onclick=()=>{location.hash='#'+a.dataset.p});
+async function go(p){if(!PAGES[p])p='overview';cur=p;$$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.p===p));$('#ptitle').textContent=TITLES[p];$('#view').innerHTML='';
+  PAGES[p].init($('#view'));try{await PAGES[p].update()}catch(e){toast(e.message,true)}}
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
+$('#rSoc').onclick=()=>window.open('/api/report/soc?actor='+q(who()),'_blank');$('#rGrc').onclick=()=>window.open('/api/report/grc?actor='+q(who()),'_blank');
+const me=$('#me');me.value=who();me.onchange=()=>{try{localStorage.setItem('np_analyst',me.value.trim()||'analyst1')}catch(e){}};
+const tick=()=>{$('#clk').textContent=cairo(Date.now(),true)+' Cairo'};tick();setInterval(tick,15000);
+let down=false;
+setInterval(async()=>{try{await loadState();if(down){down=false;toast('Reconnected')}const p=PAGES[cur];if(p&&p.live&&!$('.ov'))await p.update()}catch(e){if(!down){down=true;toast('Console API unreachable - start it with: python run_all.py',true)}}},4000);
+(async()=>{try{await loadState()}catch(e){toast('Console API unreachable - start it with: python run_all.py',true)}go(location.hash.slice(1))})();
+</script></body></html>

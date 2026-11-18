@@ -1,0 +1,78 @@
+{
+  "name": "NilePay - Alert Response (SOAR)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nilepay-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "np-webhook-0001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "nilepay-alert-0001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node - \"Triage & Playbook\"  (mode: Run Once for All Items)\n// Input : Webhook item, body = alert JSON from detect.py\n// Output: triage result. SAFE actions are listed in `actions` (run now); DISRUPTIVE actions are returned in `pending`\n//         and only run after an analyst approves them in the NilePay console (human-in-the-loop).\nconst alert = $input.first().json.body;\nif (!alert || alert.id === undefined) {\n  throw new Error('Webhook body must be the alert JSON (missing id)');\n}\n\nconst SEV_BASE = { Critical: 55, High: 40, Medium: 25, Low: 10 };\nconst ASSET_BONUS = { 'core-db': 10, 'wallet-svc': 10, 'kyc-portal': 8, 'admin-vpn': 8, 'pay-api-01': 5, 'pay-api-02': 5, 'mobile-gw': 2 };\nconst BAD = ['185.220.', '45.155.', '91.108.'];\nconst CLEAN = ['41.', '156.', '197.', '102.', '10.'];\nconst ROLES = ['admin', 'svc_', 'merchant_', 'support'];\n\n// [action, simulated seconds, needs analyst approval]\nconst PLAYBOOKS = {\n  'Block-IP + Notify': [['enrich_ip', 2, false], ['notify_slack', 1, false], ['block_ip', 3, true]],\n  'Lock-Account + MFA Reset': [['enrich_ip', 2, false], ['notify_user', 1, false], ['lock_account', 4, true], ['force_mfa_reset', 3, true]],\n  'Freeze-Wallet + Escalate L2': [['enrich_ip', 2, false], ['create_ticket', 2, false], ['page_l2', 1, false], ['freeze_wallet', 3, true]],\n  'Revoke-Session + Escalate L2': [['enrich_ip', 2, false], ['snapshot_logs', 4, false], ['create_ticket', 2, false], ['revoke_sessions', 3, true]],\n  'Enrich IP + Ticket': [['enrich_ip', 2, false], ['create_ticket', 2, false]],\n};\n\n// 1) Enrich (offline reputation list - swap for AbuseIPDB/VirusTotal HTTP nodes if you add API keys)\nconst ip = String(alert.ip || '');\nlet rep = 'suspicious', rb = 10;\nif (BAD.some(p => ip.startsWith(p))) { rep = 'malicious'; rb = 30; }\nelse if (CLEAN.some(p => ip.startsWith(p))) { rep = 'clean'; rb = 0; }\n\n// 2) Score\nconst sev = SEV_BASE[alert.sev] ?? 10;\nconst asset = ASSET_BONUS[alert.asset] ?? 0;\nconst role = ROLES.some(p => String(alert.user || '').startsWith(p)) ? 8 : 0;\nconst score = Math.min(100, sev + asset + rb + role);\nconst priority = score >= 80 ? 'P1' : score >= 60 ? 'P2' : score >= 40 ? 'P3' : 'P4';\n\n// 3) Decide what runs now and what needs approval\nconst base = PLAYBOOKS[alert.playbook] || PLAYBOOKS['Enrich IP + Ticket'];\nlet auto, gated;\nif (score < 40) { auto = [['enrich_ip', 2]]; gated = []; }\nelse {\n  auto = base.filter(s => !s[2]).map(s => [s[0], s[1]]);\n  gated = score >= 50 ? base.filter(s => s[2]).map(s => s[0]) : [];\n  if (score >= 80 && !auto.some(s => s[0] === 'page_l2')) auto.push(['page_l2', 1]);\n}\nconst pending = gated.map(n => ({ action: n, target: n === 'block_ip' ? alert.ip : alert.user }));\nconst verdict = score >= 80 ? 'Likely true positive - high confidence' : score >= 60 ? 'Likely true positive - validate'\n  : score >= 40 ? 'Suspicious - investigate' : 'Low risk - review and close';\n\nreturn [{\n  json: {\n    id: alert.id,\n    status: pending.length ? 'Pending Approval' : 'Triaged',\n    verdict, score, priority, ip_reputation: rep,\n    rationale: `score ${score} = severity ${sev} + asset ${asset} + ip reputation (${rep}) ${rb} + role ${role}`,\n    actions: auto.map(s => s[0]),\n    pending,\n    ttr_s: auto.reduce((t, s) => t + s[1], 0),\n  },\n}];\n"
+      },
+      "id": "np-code-0002",
+      "name": "Triage & Playbook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.callback) }}",
+        "options": {}
+      },
+      "id": "np-respond-0003",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        520,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Triage & Playbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage & Playbook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "pinData": {},
+  "tags": []
+}

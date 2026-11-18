@@ -1,0 +1,167 @@
+[
+ {
+  "id": "R01",
+  "name": "Card-testing burst on /v1/payments",
+  "sev": "High",
+  "tactic": "Impact",
+  "tech": "T1657",
+  "playbook": "Block-IP + Notify",
+  "bucket": 300,
+  "sql": "SELECT MAX(ts) AS ts, MIN(user) AS user, ip, MIN(asset) AS asset, 'Card testing: '||COUNT(*)||' failed micro-payments in 5 min' AS detail FROM events WHERE etype='payment' AND ok=0 AND amount<2 GROUP BY ip, ts/300 HAVING COUNT(*)>=15",
+  "desc": "Many failed micro-value payments from one IP in 5 minutes - classic card testing."
+ },
+ {
+  "id": "R02",
+  "name": "Account takeover: impossible travel",
+  "sev": "Critical",
+  "tactic": "Initial Access",
+  "tech": "T1078",
+  "playbook": "Lock-Account + MFA Reset",
+  "bucket": 3600,
+  "sql": "SELECT a.ts AS ts, a.user AS user, a.ip AS ip, a.asset AS asset, 'Logins from '||b.country||' then '||a.country||' within '||((a.ts-b.ts)/60)||' min' AS detail FROM events a JOIN events b ON b.user=a.user AND b.etype='login' AND b.ok=1 AND b.country<>a.country AND b.ts<a.ts AND a.ts-b.ts<3600 WHERE a.etype='login' AND a.ok=1",
+  "desc": "Two successful logins for one user from different countries less than an hour apart."
+ },
+ {
+  "id": "R03",
+  "name": "Credential stuffing on /login",
+  "sev": "High",
+  "tactic": "Credential Access",
+  "tech": "T1110.004",
+  "playbook": "Block-IP + Notify",
+  "bucket": 600,
+  "sql": "SELECT MAX(ts) AS ts, 'multiple ('||COUNT(DISTINCT user)||' users)' AS user, ip, MIN(asset) AS asset, COUNT(*)||' failed logins in 10 min' AS detail FROM events WHERE etype='login' AND ok=0 GROUP BY ip, ts/600 HAVING COUNT(*)>=25 AND COUNT(DISTINCT user)>=10",
+  "desc": "Many failed logins across many accounts from one IP in 10 minutes."
+ },
+ {
+  "id": "R04",
+  "name": "SIM-swap followed by wallet drain",
+  "sev": "Critical",
+  "tactic": "Impact",
+  "tech": "T1657",
+  "playbook": "Freeze-Wallet + Escalate L2",
+  "bucket": 1800,
+  "sql": "SELECT p.ts AS ts, p.user AS user, p.ip AS ip, p.asset AS asset, 'SIM swap then payout of '||CAST(p.amount AS INTEGER)||' within '||((p.ts-s.ts)/60)||' min' AS detail FROM events s JOIN events p ON p.user=s.user AND p.etype='payout' AND p.ts>s.ts AND p.ts-s.ts<1800 AND p.amount>=5000 WHERE s.etype='sim_swap'",
+  "desc": "A SIM swap followed by a payout of 5,000 or more within 30 minutes."
+ },
+ {
+  "id": "R05",
+  "name": "Merchant API key used from new country",
+  "sev": "Medium",
+  "tactic": "Initial Access",
+  "tech": "T1078.004",
+  "playbook": "Enrich IP + Ticket",
+  "bucket": 3600,
+  "sql": "SELECT MAX(ts) AS ts, user, MIN(ip) AS ip, MIN(asset) AS asset, 'Merchant API key used from '||MIN(country)||' ('||COUNT(*)||' calls)' AS detail FROM events WHERE etype='api' AND user LIKE 'merchant_%' AND country<>'EG' GROUP BY user, ts/3600",
+  "desc": "Merchant API key used from outside Egypt."
+ },
+ {
+  "id": "R06",
+  "name": "Admin VPN login outside working hours",
+  "sev": "Medium",
+  "tactic": "Persistence",
+  "tech": "T1133",
+  "playbook": "Enrich IP + Ticket",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Admin VPN login at local hour '||strftime('%H', ts, 'unixepoch', '+2 hours') AS detail FROM events WHERE etype='vpn' AND ok=1 AND user LIKE 'admin%' AND CAST(strftime('%H', ts, 'unixepoch', '+2 hours') AS INTEGER) BETWEEN 0 AND 5",
+  "desc": "Administrator VPN login between 00:00 and 05:59 Cairo time."
+ },
+ {
+  "id": "R07",
+  "name": "Mass KYC document download",
+  "sev": "High",
+  "tactic": "Collection",
+  "tech": "T1530",
+  "playbook": "Revoke-Session + Escalate L2",
+  "bucket": 3600,
+  "sql": "SELECT MAX(ts) AS ts, user, MIN(ip) AS ip, 'kyc-portal' AS asset, COUNT(*)||' KYC records read in 1 hour' AS detail FROM events WHERE etype='kyc_read' GROUP BY user, ts/3600 HAVING COUNT(*)>=100",
+  "desc": "One user read 100+ KYC records in an hour."
+ },
+ {
+  "id": "R08",
+  "name": "Core DB query spike by service account",
+  "sev": "Critical",
+  "tactic": "Exfiltration",
+  "tech": "T1041",
+  "playbook": "Freeze-Wallet + Escalate L2",
+  "bucket": 600,
+  "sql": "SELECT MAX(ts) AS ts, user, MIN(ip) AS ip, MIN(asset) AS asset, 'Service account pulled '||CAST(SUM(amount) AS INTEGER)||' rows in 10 min' AS detail FROM events WHERE etype='db_query' AND user LIKE 'svc_%' GROUP BY user, ts/600 HAVING SUM(amount)>=1000000",
+  "desc": "Service account pulled over 1,000,000 rows in 10 minutes."
+ },
+ {
+  "id": "R09",
+  "name": "Webhook tampering on merchant API",
+  "sev": "Medium",
+  "tactic": "Defense Evasion",
+  "tech": "T1565",
+  "playbook": "Enrich IP + Ticket",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Webhook changed to '||detail AS detail FROM events WHERE etype='webhook_change' AND detail LIKE 'external:%'",
+  "desc": "Merchant webhook URL changed to an external, non-registered domain."
+ },
+ {
+  "id": "R10",
+  "name": "Failed MFA flood (push fatigue)",
+  "sev": "Medium",
+  "tactic": "Credential Access",
+  "tech": "T1621",
+  "playbook": "Lock-Account + MFA Reset",
+  "bucket": 600,
+  "sql": "SELECT MAX(ts) AS ts, user, MIN(ip) AS ip, MIN(asset) AS asset, COUNT(*)||' failed MFA prompts in 10 min' AS detail FROM events WHERE etype='mfa' AND ok=0 GROUP BY user, ts/600 HAVING COUNT(*)>=8",
+  "desc": "8 or more failed MFA prompts for one user in 10 minutes."
+ },
+ {
+  "id": "R11",
+  "name": "Mobile gateway scraping bot",
+  "sev": "Low",
+  "tactic": "Discovery",
+  "tech": "T1595",
+  "playbook": "Block-IP + Notify",
+  "bucket": 300,
+  "sql": "SELECT MAX(ts) AS ts, 'anonymous' AS user, ip, 'mobile-gw' AS asset, COUNT(*)||' requests in 5 min' AS detail FROM events WHERE etype='api' AND asset='mobile-gw' GROUP BY ip, ts/300 HAVING COUNT(*)>=120",
+  "desc": "120+ requests to the mobile gateway from one IP in 5 minutes."
+ },
+ {
+  "id": "R12",
+  "name": "New admin role granted",
+  "sev": "High",
+  "tactic": "Privilege Escalation",
+  "tech": "T1098",
+  "playbook": "Revoke-Session + Escalate L2",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Role grant: '||detail AS detail FROM events WHERE etype='role_grant' AND detail LIKE '%admin%'",
+  "desc": "An admin role was granted to an account."
+ },
+ {
+  "id": "R13",
+  "name": "Dormant account sudden payout",
+  "sev": "Medium",
+  "tactic": "Impact",
+  "tech": "T1657",
+  "playbook": "Enrich IP + Ticket",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Payout of '||CAST(amount AS INTEGER)||' from dormant account' AS detail FROM events WHERE etype='payout' AND detail LIKE '%dormant%' AND amount>=3000",
+  "desc": "Payout of 3,000 or more from an account flagged dormant for 90 days."
+ },
+ {
+  "id": "R14",
+  "name": "TOR exit node login",
+  "sev": "Low",
+  "tactic": "Command and Control",
+  "tech": "T1090.003",
+  "playbook": "Block-IP + Notify",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Login from TOR exit node' AS detail FROM events WHERE etype='login' AND detail LIKE 'tor_exit%'",
+  "desc": "Successful customer login from a TOR exit node."
+ },
+ {
+  "id": "R15",
+  "name": "Suspicious process on payment host",
+  "sev": "Critical",
+  "tactic": "Execution",
+  "tech": "T1059",
+  "playbook": "Freeze-Wallet + Escalate L2",
+  "bucket": 3600,
+  "sql": "SELECT ts AS ts, user AS user, ip AS ip, asset AS asset, 'Suspicious process: '||detail AS detail FROM events WHERE etype='proc' AND detail IN ('mimikatz','powershell -enc','nc -e','certutil -urlcache')",
+  "desc": "Known attacker tooling executed on a payment host."
+ }
+]

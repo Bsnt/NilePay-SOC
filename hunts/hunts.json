@@ -1,0 +1,65 @@
+[
+ {
+  "id": "H1",
+  "name": "Slow-and-low credential stuffing",
+  "tactic": "Credential Access",
+  "hyp": "Few attempts per IP, many IPs, one non-browser user-agent hitting /login.",
+  "sql": "SELECT ua, COUNT(DISTINCT ip) AS ips, COUNT(*) AS attempts FROM events WHERE etype='login' AND ok=0 AND ua NOT LIKE 'Mozilla%' AND ua NOT LIKE 'NilePayApp%' GROUP BY ua HAVING ips>=30"
+ },
+ {
+  "id": "H2",
+  "name": "Merchant API keys seen in 2+ countries",
+  "tactic": "Initial Access",
+  "hyp": "A stolen key is used from a country different from its baseline.",
+  "sql": "SELECT user, COUNT(DISTINCT country) AS countries, GROUP_CONCAT(DISTINCT country) AS list FROM events WHERE etype='api' AND user LIKE 'merchant_%' GROUP BY user HAVING countries>1"
+ },
+ {
+  "id": "H3",
+  "name": "Payouts just under the approval limit",
+  "tactic": "Impact",
+  "hyp": "Structuring: repeated payouts at 95-99% of the 10,000 limit.",
+  "sql": "SELECT user, COUNT(*) AS n, CAST(SUM(amount) AS INTEGER) AS total FROM events WHERE etype='payout' AND amount BETWEEN 9500 AND 9999 GROUP BY user HAVING n>=3"
+ },
+ {
+  "id": "H4",
+  "name": "Service accounts doing interactive logins",
+  "tactic": "Persistence",
+  "hyp": "Service accounts should never log in through web or VPN.",
+  "sql": "SELECT user, etype, COUNT(*) AS n FROM events WHERE user LIKE 'svc_%' AND etype IN ('login','vpn') GROUP BY user, etype"
+ },
+ {
+  "id": "H5",
+  "name": "Night-time bulk KYC reads",
+  "tactic": "Collection",
+  "hyp": "Support staff reading 30+ KYC records outside 08:00-18:00 Cairo time.",
+  "sql": "SELECT user, COUNT(*) AS n FROM events WHERE etype='kyc_read' AND CAST(strftime('%H', ts, 'unixepoch', '+2 hours') AS INTEGER) NOT BETWEEN 8 AND 18 GROUP BY user HAVING n>=30"
+ },
+ {
+  "id": "H6",
+  "name": "Reset, new device, then payout",
+  "tactic": "Credential Access",
+  "hyp": "Password reset + unknown device + payout within 30 minutes each.",
+  "sql": "SELECT DISTINCT r.user AS user, p.amount AS payout FROM events r JOIN events d ON d.user=r.user AND d.etype='new_device' AND d.ts>r.ts AND d.ts-r.ts<1800 JOIN events p ON p.user=r.user AND p.etype='payout' AND p.ts>d.ts AND p.ts-d.ts<1800 WHERE r.etype='password_reset'"
+ },
+ {
+  "id": "H7",
+  "name": "Webhook change before large refunds",
+  "tactic": "Defense Evasion",
+  "hyp": "Merchant changes webhook then 3+ refunds over 1,000 follow within 24h.",
+  "sql": "SELECT w.user AS user, COUNT(r.ts) AS big_refunds, CAST(SUM(r.amount) AS INTEGER) AS total FROM events w JOIN events r ON r.user=w.user AND r.etype='refund' AND r.amount>=1000 AND r.ts>w.ts AND r.ts-w.ts<86400 WHERE w.etype='webhook_change' GROUP BY w.user, w.ts HAVING big_refunds>=3"
+ },
+ {
+  "id": "H8",
+  "name": "Rare process on a single host",
+  "tactic": "Execution",
+  "hyp": "Stack counting: executables that appear on exactly one host.",
+  "sql": "SELECT detail AS exe, COUNT(DISTINCT asset) AS hosts, MIN(asset) AS host FROM events WHERE etype='proc' GROUP BY detail HAVING hosts=1"
+ },
+ {
+  "id": "H9",
+  "name": "Beaconing from internal hosts",
+  "tactic": "Command and Control",
+  "hyp": "Regular-interval outbound connections with very low jitter.",
+  "sql": "SELECT asset AS host, detail AS dst, COUNT(*) AS n, ROUND(MAX(amount)-MIN(amount),2) AS jitter_s FROM events WHERE etype='conn' GROUP BY asset, detail HAVING n>=20 AND jitter_s<=2"
+ }
+]

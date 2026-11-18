@@ -1,0 +1,78 @@
+{
+  "name": "NilePay - Execute Approved Action",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nilepay-action",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "np-webhook-0201",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "nilepay-action-0001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node - \"Execute approved action\"  (mode: Run Once for All Items)\n// Called by the NilePay console ONLY after an analyst approved the action. Replace the simulated results with real calls\n// (firewall API, IAM/IdP API, core-banking freeze API) using HTTP Request nodes.\nconst { action, target } = $input.first().json.body || {};\nif (!action || !target) { throw new Error('body must contain action and target'); }\nconst RESULT = {\n  block_ip: `Edge firewall rule added for ${target} (TTL 24h)`,\n  lock_account: `Account ${target} locked and sessions invalidated`,\n  force_mfa_reset: `MFA re-enrolment forced for ${target}`,\n  freeze_wallet: `Wallet ${target} frozen; outgoing payouts held`,\n  revoke_sessions: `All access tokens revoked for ${target}`,\n};\nif (!RESULT[action]) { throw new Error('unknown action: ' + action); }\nreturn [{ json: { ok: true, action, target, result: RESULT[action], executed_at: new Date().toISOString() } }];\n"
+      },
+      "id": "np-code-0202",
+      "name": "Execute approved action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "np-respond-0203",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        520,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute approved action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute approved action": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "pinData": {},
+  "tags": []
+}
